@@ -1,10 +1,110 @@
-# Physics-Informed Neural Networks for Biological $2\mathrm{D}{+}t$ Reaction--Diffusion Systems
-
-> **🚧 Repository Status: Initial Infrastructure Release 🚧**
-> 
-> The core coding infrastructure and model architectures used in our paper have been uploaded. We are currently preparing READMEs, usage instructions and improvements to pedagogical supplements (such as the Jupyter notebook).
-
-## Overview
+# Physics-Informed Neural Networks for Biological 2D+t Reaction-Diffusion Systems
 
 
-This repository contains the implementation for the paper *"Physics-Informed Neural Networks for Biological* $2\mathrm{D}{+}t$ *Reaction--Diffusion Systems"*.
+
+Physics-informed neural networks (PINNs) provide a powerful framework for learning governing equations from data [[1]](#raissi-et-al-2019). Biologically-informed neural networks (BINNs) extend that idea by preserving known differential-operator structure while learning constitutive terms via trainable subnetworks [[2]](#lagergren-et-al-2020).
+
+We introduce a framework that combines data preprocessing, BINN-based equation learning, and symbolic regression for explicit, closed-form equation discovery directly from experimental data—demonstrated here by recovering $2\mathrm{D}{+}t$ reaction–diffusion models of lung cancer cell population dynamics from time-lapse microscopy.
+
+Readily applicable to other spatio-temporal systems, this framework provides a practical and interpretable tool for fast analytic equation discovery from data.
+
+For more detail see the [manuscript](https://arxiv.org/abs/2604.18548).
+
+
+## Pipeline
+
+The schematic of the pipeline used to apply the PINN framework to the experimental data is shown in [pipeline_schematic.png](pipeline_schematic.png).
+
+## Repository structure
+
+```text
+pinn-reaction-diffusion-2dt/
+├── README.md
+├── environment.yml
+├── preview.pdf
+├── pipeline_schematic.png
+└── main/
+	├── README.md
+	├── data/
+	│   └── python_v2/
+	│       ├── README.md
+	│       ├── config/
+	│       ├── components/
+	│       ├── exec/
+	│       ├── modules/
+	│       └── runs/
+	├── dataObj_v2/
+	├── binn_v2/
+	│   ├── README.md
+	│   ├── python/
+	│   │   ├── pipeline/
+	│   │   │   ├── config/
+	│   │   │   ├── components/
+	│   │   │   └── exec/
+	│   │   └── Modules/
+	│   │       ├── README.md
+	│   │       ├── dataClass.py
+	│   │       ├── Models/
+	│   │       │   ├── BuildBINNs_2D.py
+	│   │       │   └── BuildMLP.py
+	│   │       └── Utils/
+	│   │           ├── Gradient.py
+	│   │           ├── ModelWrapper.py
+	│   │           └── PDESolver_2D.py
+	│   └── runs/
+	├── binn_v2_models/
+	├── binn_v2_models_updated/
+	└── JN/
+		├── README.md
+		├── paper_notebook.ipynb
+		├── paper_helpers/
+		└── outputs/
+```
+
+## Environment setup
+
+Create the project environment first:
+
+```bash
+conda env create -f environment.yml
+conda activate pinn-rd-2dt
+```
+
+Then open the notebook and select this same environment as kernel.
+
+## Documentation guide
+
+Use the README files below for focused guidance on each stage of the pipeline:
+
+- [README.md](README.md): high-level overview of the paper context, repository layout, and top-level setup.
+- [main/README.md](main/README.md): full training pipeline guide, including how to generate data stores and train BINN models.
+- [main/binn_v2/README.md](main/binn_v2/README.md): BINN training pipeline usage and experiment configuration points.
+- [main/binn_v2/python/Modules/README.md](main/binn_v2/python/Modules/README.md): code-level model/loss documentation, including constraints, loss weights, and PDE customization points.
+- [main/data/python_v2/README.md](main/data/python_v2/README.md): data-preprocessing/data-object generation details and run controls.
+- [main/data/split_csvs/README.md](main/data/split_csvs/README.md): details on CSV dataset contents and filename metadata semantics.
+- [main/JN/README.md](main/JN/README.md): notebook workflow guide, including the paper-aligned notebook structure used to reproduce result figures.
+- [main/JN/paper_helpers/README.md](main/JN/paper_helpers/README.md): detailed overview of paper-ready analysis, plotting, SR pipeline, and forward simulation helper modules.
+
+## Optional checks
+
+Quick validation commands are documented in [main/README.md](main/README.md), since they are run from the training pipeline context.
+
+## Citation
+
+```
+@misc{lavery2026physicsinformedneuralnetworksbiological,
+      title={Physics-Informed Neural Networks for Biological $2\mathrm{D}{+}t$ Reaction-Diffusion Systems}, 
+      author={William Lavery and Jodie A. Cochrane and Christian Olesen and Dagim S. Tadele and John T. Nardini and Sara Hamis},
+      year={2026},
+      eprint={2604.18548},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2604.18548}, 
+}
+```
+
+## References
+
+1. Raissi M, Perdikaris P, Karniadakis GE. Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations. *Journal of Computational Physics*. 2019;378:686–707. [https://doi.org/10.1016/j.jcp.2018.10.045](https://doi.org/10.1016/j.jcp.2018.10.045)
+
+2. Lagergren JH, Nardini JT, Baker RE, Simpson MJ, Flores KB. Biologically-informed neural networks guide mechanistic modeling from sparse experimental data. *PLoS Computational Biology*. 2020;16(12):e1008462. [https://doi.org/10.1371/journal.pcbi.1008462](https://doi.org/10.1371/journal.pcbi.1008462)

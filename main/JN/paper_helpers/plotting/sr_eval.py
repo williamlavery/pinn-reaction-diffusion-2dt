@@ -1,0 +1,1916 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+from __future__ import division, print_function
+
+import os
+import itertools
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+
+import numpy as np
+import torch
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
+
+from ..io.paths import (
+    build_save_path,
+    should_skip_all,
+    save_figure,
+    hist_properties_wrapper,
+)
+
+# ---------------------------------------------------------------------
+# Default Configurations
+# ---------------------------------------------------------------------
+uMLP_colours = [
+    "#0033A0",
+    "#1E90FF",
+    "#6699CC",
+    "#A4C8E1",
+    "#D6EAF8",
+]
+
+DEFAULT_SYM_LABELS = {
+    "2_3": r"$D_{1,SR}$",
+    "2_5": r"$D_{2,SR}$",
+    "3_1": r"$D_{3,SR}$",
+}
+
+ArrayLike = Union[np.ndarray, Sequence[float]]
+CallableOrMapping = Optional[
+    Union[
+        Callable[[ArrayLike], ArrayLike],
+        Sequence[Callable[[ArrayLike], ArrayLike]],
+        Mapping[Any, Callable[[ArrayLike], ArrayLike]],
+    ]
+]
+StringOrMapping = Optional[
+    Union[
+        str,
+        Sequence[Optional[str]],
+        Mapping[Any, Optional[str]],
+    ]
+]
+ScaleOrMapping = Optional[
+    Union[
+        float,
+        Sequence[float],
+        Mapping[Any, float],
+    ]
+]
+SymLabelsType = Optional[
+    Union[
+        str,
+        Sequence[Optional[str]],
+        Mapping[Any, Optional[str]],
+    ]
+]
+
+
+class SRPlotter:
+    """
+    Plotter for ensemble diffusion/growth curves and optional histograms.
+
+    Parameters
+    ----------
+    base_dir : str, default="plots"
+        Default base directory used when saving figures.
+    overwrite : bool, default=False
+        Whether to overwrite existing saved files.
+    dpi : int, default=100
+        Default figure save DPI.
+    """
+
+    def __init__(
+        self,
+        base_dir: str = "plots",
+        overwrite: bool = False,
+        dpi: int = 100,
+    ) -> None:
+        self.base_dir = base_dir
+        self.overwrite = overwrite
+        self.dpi = dpi
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def plot_eval_D_multi_std(
+        self,
+        modelWrapper_dics_nested: Dict[Any, Dict[Any, Any]],
+        speciesLabel: str,
+        colors: Sequence[str],
+        labels: Optional[Sequence[str]] = None,
+        hist_labels: Optional[Sequence[str]] = None,
+        device: str = "cpu",
+        num_bins: int = 50,
+        K: float = 1.0,
+        name: Optional[str] = None,
+        fill: bool = True,
+        legend_pos: Optional[Tuple[float, float]] = (0.5, 0.5),
+        legend_ncols: int = 1,
+        legend_fontsize: int = 10,
+        linestyles: Optional[Sequence[Any]] = None,
+        figsize: Tuple[float, float] = (7, 5),
+        x_lim: Optional[Tuple[float, float]] = None,
+        y_lim: Optional[Tuple[float, float]] = None,
+        axis_labels: bool = True,
+        xlabel_fontsize: float = 11.0,
+        ylabel_fontsize: float = 11.0,
+        xtick_labelsize: float = 10.0,
+        ytick_labelsize: float = 10.0,
+        major_tick_length: float = 4.0,
+        major_tick_width: float = 1.0,
+        minor_tick_length: float = 2.5,
+        minor_tick_width: float = 0.8,
+        save_dic: Optional[dict] = None,
+        save_name: Optional[str] = None,
+        base_dir: Optional[str] = None,
+        overwrite: Optional[bool] = None,
+        save_dir2: Optional[str] = None,
+        f_lambdas: CallableOrMapping = None,
+        D_sym_simp_list: StringOrMapping = None,
+        u_scale_SRs: ScaleOrMapping = None,
+        range5_95: bool = True,
+        show_hist: bool = True,
+        save_hist: bool = True,
+        hist_clip_5_95: bool = True,
+        hist_figsize: Optional[Tuple[float, float]] = None,
+        hist_colors: Optional[Sequence[str]] = None,
+        hist_xlabel_fontsize: Optional[float] = None,
+        hist_ylabel_fontsize: Optional[float] = None,
+        hist_xtick_labelsize: Optional[float] = None,
+        hist_ytick_labelsize: Optional[float] = None,
+        hist_major_tick_length: Optional[float] = None,
+        hist_major_tick_width: Optional[float] = None,
+        hist_minor_tick_length: Optional[float] = None,
+        hist_minor_tick_width: Optional[float] = None,
+        sym_labels: SymLabelsType = None,
+    ) -> None:
+        """
+        Plot diffusion ensembles with mean ± std shading and optional histograms.
+
+        Parameters
+        ----------
+        hist_labels : sequence of str, optional
+            Labels used only in the histogram legend. If None, defaults to
+            ["Repl. 1", "Repl. 2", ...].
+
+        sym_labels : mapping / sequence / str / None, optional
+            Labels used for symbolic-regression legend entries.
+            If None, defaults to:
+                {"2_3": r"$D_{1,SR}$", "2_5": r"$D_{2,SR}$", "3_1": r"$D_{3,SR}$"}
+        """
+        self._plot_eval_multi_std(
+            modelWrapper_dics_nested=modelWrapper_dics_nested,
+            speciesLabel=speciesLabel,
+            colors=colors,
+            labels=labels,
+            hist_labels=hist_labels,
+            device=device,
+            num_bins=num_bins,
+            K=K,
+            name=name,
+            fill=fill,
+            legend_pos=legend_pos,
+            legend_ncols=legend_ncols,
+            legend_fontsize=legend_fontsize,
+            linestyles=linestyles,
+            figsize=figsize,
+            x_lim=x_lim,
+            y_lim=y_lim,
+            axis_labels=axis_labels,
+            xlabel_fontsize=xlabel_fontsize,
+            ylabel_fontsize=ylabel_fontsize,
+            xtick_labelsize=xtick_labelsize,
+            ytick_labelsize=ytick_labelsize,
+            major_tick_length=major_tick_length,
+            major_tick_width=major_tick_width,
+            minor_tick_length=minor_tick_length,
+            minor_tick_width=minor_tick_width,
+            save_dic=save_dic,
+            save_name=save_name,
+            base_dir=base_dir,
+            overwrite=overwrite,
+            save_dir2=save_dir2,
+            f_lambdas=f_lambdas,
+            sym_simp_list=D_sym_simp_list,
+            u_scale_SRs=u_scale_SRs,
+            range5_95=range5_95,
+            show_hist=show_hist,
+            save_hist=save_hist,
+            hist_clip_5_95=hist_clip_5_95,
+            hist_figsize=hist_figsize,
+            hist_colors=hist_colors,
+            hist_xlabel_fontsize=hist_xlabel_fontsize,
+            hist_ylabel_fontsize=hist_ylabel_fontsize,
+            hist_xtick_labelsize=hist_xtick_labelsize,
+            hist_ytick_labelsize=hist_ytick_labelsize,
+            hist_major_tick_length=hist_major_tick_length,
+            hist_major_tick_width=hist_major_tick_width,
+            hist_minor_tick_length=hist_minor_tick_length,
+            hist_minor_tick_width=hist_minor_tick_width,
+            sym_labels=sym_labels,
+            mode="diff",
+        )
+
+    def plot_eval_G_multi_std(
+        self,
+        modelWrapper_dics_nested: Dict[Any, Dict[Any, Any]],
+        speciesLabel: str,
+        colors: Sequence[str],
+        labels: Optional[Sequence[str]] = None,
+        hist_labels: Optional[Sequence[str]] = None,
+        device: str = "cpu",
+        num_bins: int = 50,
+        K: float = 1700.0,
+        name: Optional[str] = None,
+        fill: bool = True,
+        legend_pos: Optional[Tuple[float, float]] = (0.5, 0.5),
+        legend_ncols: int = 1,
+        legend_fontsize: int = 10,
+        linestyles: Optional[Sequence[Any]] = None,
+        figsize: Tuple[float, float] = (7, 5),
+        x_lim: Optional[Tuple[float, float]] = None,
+        y_lim: Optional[Tuple[float, float]] = None,
+        axis_labels: bool = True,
+        xlabel_fontsize: float = 11.0,
+        ylabel_fontsize: float = 11.0,
+        xtick_labelsize: float = 10.0,
+        ytick_labelsize: float = 10.0,
+        major_tick_length: float = 4.0,
+        major_tick_width: float = 1.0,
+        minor_tick_length: float = 2.5,
+        minor_tick_width: float = 0.8,
+        save_dic: Optional[dict] = None,
+        save_name: Optional[str] = None,
+        base_dir: Optional[str] = None,
+        overwrite: Optional[bool] = None,
+        save_dir2: Optional[str] = None,
+        f_lambdas: CallableOrMapping = None,
+        G_sym_simp_list: StringOrMapping = None,
+        u_scale_SRs: ScaleOrMapping = None,
+        range5_95: bool = True,
+        show_hist: bool = True,
+        save_hist: bool = True,
+        hist_clip_5_95: bool = True,
+        hist_figsize: Optional[Tuple[float, float]] = None,
+        hist_colors: Optional[Sequence[str]] = None,
+        hist_xlabel_fontsize: Optional[float] = None,
+        hist_ylabel_fontsize: Optional[float] = None,
+        hist_xtick_labelsize: Optional[float] = None,
+        hist_ytick_labelsize: Optional[float] = None,
+        hist_major_tick_length: Optional[float] = None,
+        hist_major_tick_width: Optional[float] = None,
+        hist_minor_tick_length: Optional[float] = None,
+        hist_minor_tick_width: Optional[float] = None,
+        sym_labels: SymLabelsType = None,
+    ) -> None:
+        """
+        Plot growth ensembles with mean ± std shading and optional histograms.
+
+        Parameters
+        ----------
+        hist_labels : sequence of str, optional
+            Labels used only in the histogram legend. If None, defaults to
+            ["Repl. 1", "Repl. 2", ...].
+
+        sym_labels : mapping / sequence / str / None, optional
+            Labels used for symbolic-regression legend entries.
+            If None, defaults to:
+                {"2_3": r"$D_{1,SR}$", "2_5": r"$D_{2,SR}$", "3_1": r"$D_{3,SR}$"}
+            for matching keys; unmatched keys fall back to autogenerated labels.
+        """
+        self._plot_eval_multi_std(
+            modelWrapper_dics_nested=modelWrapper_dics_nested,
+            speciesLabel=speciesLabel,
+            colors=colors,
+            labels=labels,
+            hist_labels=hist_labels,
+            device=device,
+            num_bins=num_bins,
+            K=K,
+            name=name,
+            fill=fill,
+            legend_pos=legend_pos,
+            legend_ncols=legend_ncols,
+            legend_fontsize=legend_fontsize,
+            linestyles=linestyles,
+            figsize=figsize,
+            x_lim=x_lim,
+            y_lim=y_lim,
+            axis_labels=axis_labels,
+            xlabel_fontsize=xlabel_fontsize,
+            ylabel_fontsize=ylabel_fontsize,
+            xtick_labelsize=xtick_labelsize,
+            ytick_labelsize=ytick_labelsize,
+            major_tick_length=major_tick_length,
+            major_tick_width=major_tick_width,
+            minor_tick_length=minor_tick_length,
+            minor_tick_width=minor_tick_width,
+            save_dic=save_dic,
+            save_name=save_name,
+            base_dir=base_dir,
+            overwrite=overwrite,
+            save_dir2=save_dir2,
+            f_lambdas=f_lambdas,
+            sym_simp_list=G_sym_simp_list,
+            u_scale_SRs=u_scale_SRs,
+            range5_95=range5_95,
+            show_hist=show_hist,
+            save_hist=save_hist,
+            hist_clip_5_95=hist_clip_5_95,
+            hist_figsize=hist_figsize,
+            hist_colors=hist_colors,
+            hist_xlabel_fontsize=hist_xlabel_fontsize,
+            hist_ylabel_fontsize=hist_ylabel_fontsize,
+            hist_xtick_labelsize=hist_xtick_labelsize,
+            hist_ytick_labelsize=hist_ytick_labelsize,
+            hist_major_tick_length=hist_major_tick_length,
+            hist_major_tick_width=hist_major_tick_width,
+            hist_minor_tick_length=hist_minor_tick_length,
+            hist_minor_tick_width=hist_minor_tick_width,
+            sym_labels=sym_labels,
+            mode="grow",
+        )
+
+    def plot_eval_hist_multi(
+        self,
+        modelWrapper_dics_nested: Dict[Any, Dict[Any, Any]],
+        speciesLabel: str,
+        colors: Sequence[str],
+        labels: Optional[Sequence[str]] = None,
+        num_bins: int = 50,
+        K: float = 1.0,
+        figsize: Tuple[float, float] = (7, 5),
+        axis_labels: bool = True,
+        xlabel_fontsize: float = 11.0,
+        ylabel_fontsize: float = 11.0,
+        xtick_labelsize: float = 10.0,
+        ytick_labelsize: float = 10.0,
+        major_tick_length: float = 4.0,
+        major_tick_width: float = 1.0,
+        minor_tick_length: float = 2.5,
+        minor_tick_width: float = 0.8,
+        legend_pos: str = "best",
+        legend_ncols: int = 1,
+        legend_fontsize: int = 10,
+        base_dir: Optional[str] = None,
+        save_name: str = "hist_combo.png",
+    ) -> None:
+        """
+        Minimal version that ONLY plots the wrapper-averaged histograms per group.
+        """
+        plot_base_dir = base_dir if base_dir is not None else self.base_dir
+
+        outer_keys = list(modelWrapper_dics_nested.keys())
+        if labels is None:
+            labels = [str(k) for k in outer_keys]
+        colors = colors[: len(outer_keys)]
+
+        hist_results = []
+        sizes = []
+
+        for group_key, color, label in zip(outer_keys, colors, labels):
+            group_dic = modelWrapper_dics_nested[group_key]
+            wrappers = list(group_dic.values())
+            if not wrappers:
+                continue
+
+            u_sfs = []
+            mass_on_ref_list = []
+            bin_centers_ref = None
+            bin_edges_ref = None
+            group_low_us = []
+            group_high_us = []
+
+            for i, wrapper in enumerate(wrappers):
+                sample_model = wrapper.model
+                u_sf = self._get_u_scale(sample_model, speciesLabel)
+                u_sfs.append(float(u_sf))
+
+                h_props = hist_properties_wrapper(wrapper, num_bins=num_bins)
+
+                if i == 0:
+                    bin_centers_ref = np.asarray(h_props["bin_centers"], dtype=float)
+                    bin_edges_ref = np.asarray(h_props["bin_edges"], dtype=float)
+
+                hist_counts = np.asarray(h_props["hist"].detach().cpu().numpy(), dtype=float)
+                bin_centers_w = np.asarray(h_props["bin_centers"], dtype=float)
+
+                sort_idx_bins = np.argsort(bin_centers_w)
+                mass_on_ref = np.interp(
+                    bin_centers_ref,
+                    bin_centers_w[sort_idx_bins],
+                    hist_counts[sort_idx_bins],
+                    left=0.0,
+                    right=0.0,
+                )
+                mass_on_ref_list.append(mass_on_ref)
+
+                group_low_us.append(float(h_props["low_count"]))
+                group_high_us.append(float(h_props["high_count"]))
+
+            if not mass_on_ref_list:
+                continue
+
+            u_sf_group = float(np.mean(u_sfs))
+            mass_on_ref_stack = np.vstack(mass_on_ref_list)
+            mass_mean_ref = mass_on_ref_stack.mean(axis=0)
+
+            low_u_group = float(np.mean(group_low_us)) if group_low_us else None
+            high_u_group = float(np.mean(group_high_us)) if group_high_us else None
+
+            hist_results.append(
+                {
+                    "group_key": group_key,
+                    "label": label,
+                    "color": color,
+                    "edges_ref": bin_edges_ref,
+                    "centers_ref": bin_centers_ref,
+                    "mass_mean_ref": mass_mean_ref,
+                    "u_sf_group": u_sf_group,
+                    "low_u_group": low_u_group,
+                    "high_u_group": high_u_group,
+                }
+            )
+            sizes.append(wrappers[-1].y_train.size)
+
+        if sizes:
+            sizes = np.array(sizes, dtype=float)
+            sizes = sizes / np.sum(sizes)
+        else:
+            sizes = np.array([])
+
+        target = os.path.join(plot_base_dir, save_name)
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+
+        self._plot_histograms(
+            hist_results=hist_results,
+            K=K,
+            axis_labels=axis_labels,
+            xlabel_fontsize=xlabel_fontsize,
+            ylabel_fontsize=ylabel_fontsize,
+            xtick_labelsize=xtick_labelsize,
+            ytick_labelsize=ytick_labelsize,
+            major_tick_length=major_tick_length,
+            major_tick_width=major_tick_width,
+            minor_tick_length=minor_tick_length,
+            minor_tick_width=minor_tick_width,
+            legend_ncols=legend_ncols,
+            legend_fontsize=legend_fontsize,
+            figsize=figsize,
+            sizes=sizes,
+            n_groups=len(hist_results),
+            hist_clip_5_95=False,
+            target=target,
+            save_hist=True,
+            overwrite=True,
+            legend_loc=legend_pos,
+            hist_suffix=False,
+        )
+
+    def plot_eval_hist_multi_separate_stacked(
+        self,
+        modelWrapper_dics_nested: Dict[Any, Dict[Any, Any]],
+        speciesLabel: str,
+        colors: Sequence[str],
+        labels: Optional[Sequence[str]] = None,
+        num_bins: int = 50,
+        K: float = 1.0,
+        figsize: Optional[Tuple[float, float]] = None,
+        axis_labels: bool = True,
+        xlabel_fontsize: float = 11.0,
+        ylabel_fontsize: float = 11.0,
+        xtick_labelsize: float = 10.0,
+        ytick_labelsize: float = 10.0,
+        title_fontsize: float = 10.0,
+        major_tick_length: float = 4.0,
+        major_tick_width: float = 1.0,
+        minor_tick_length: float = 2.5,
+        minor_tick_width: float = 0.8,
+        legend: bool = True,
+        legend_fontsize: int = 10,
+        base_dir: Optional[str] = None,
+        save_name: str = "hist_separate_stacked.png",
+        time_threshold: float = 24.0,
+        sharey: bool = True,
+    ) -> None:
+        """
+        Plot one histogram subplot per group, with wrapper histograms split by time.
+
+        This version now also uses sample-level paired time/density data.
+        """
+        plot_base_dir = base_dir if base_dir is not None else self.base_dir
+
+        outer_keys = list(modelWrapper_dics_nested.keys())
+        if labels is None:
+            labels = [str(k) for k in outer_keys]
+
+        colors = list(colors[: len(outer_keys)])
+        n_groups = len(outer_keys)
+
+        if n_groups == 0:
+            return
+
+        if figsize is None:
+            figsize = (5 * n_groups, 4)
+
+        fig, axes = plt.subplots(
+            1,
+            n_groups,
+            figsize=figsize,
+            sharey=sharey,
+            squeeze=False,
+        )
+        axes = axes.ravel()
+
+        plotted_any = False
+
+        for ax, group_key, color, label in zip(axes, outer_keys, colors, labels):
+            group_dic = modelWrapper_dics_nested[group_key]
+            wrappers = list(group_dic.values())
+
+            if not wrappers:
+                ax.set_visible(False)
+                continue
+
+            hist_data = self._collect_group_hist_split_by_time_range(
+                wrappers=wrappers,
+                speciesLabel=speciesLabel,
+                num_bins=num_bins,
+                K=K,
+                time_threshold=time_threshold,
+                density_min=None,
+                density_max=None,
+            )
+
+            if hist_data is None:
+                ax.set_visible(False)
+                continue
+
+            plotted_any = True
+
+            edges_scaled = hist_data["edges_scaled"]
+            early_prop = hist_data["early_prop"]
+            late_prop = hist_data["late_prop"]
+            total_prop = hist_data["total_prop"]
+            low_x = hist_data["low_x"]
+            high_x = hist_data["high_x"]
+
+            widths_scaled = np.diff(edges_scaled)
+
+            ax.bar(
+                edges_scaled[:-1],
+                early_prop,
+                width=widths_scaled,
+                align="edge",
+                color=color,
+                edgecolor="black",
+                linewidth=0.8,
+                hatch="///",
+                alpha=0.6,
+                label=rf"$t \leq {time_threshold:g}$ h",
+            )
+
+            ax.bar(
+                edges_scaled[:-1],
+                late_prop,
+                width=widths_scaled,
+                align="edge",
+                bottom=early_prop,
+                color=color,
+                edgecolor="black",
+                linewidth=0.8,
+                alpha=0.9,
+                label=rf"$t > {time_threshold:g}$ h",
+            )
+
+            if total_prop.size > 0 and np.any(total_prop > 0):
+                self._add_hist_outline(ax, edges_scaled, total_prop)
+
+            if low_x is not None:
+                ax.axvline(
+                    low_x,
+                    color="k",
+                    ls="-.",
+                    lw=1.2,
+                    alpha=0.8,
+                    label="5% percentile",
+                )
+            if high_x is not None:
+                ax.axvline(
+                    high_x,
+                    color="k",
+                    ls="--",
+                    lw=1.2,
+                    alpha=0.8,
+                    label="95% percentile",
+                )
+
+            ax.set_title(str(label), fontsize=title_fontsize)
+            ax.grid(False)
+
+            if axis_labels:
+                ax.set_xlabel("Cell density [cells mm$^{-2}$]", fontsize=xlabel_fontsize)
+
+            self._style_axes(
+                ax,
+                xtick_labelsize=xtick_labelsize,
+                ytick_labelsize=ytick_labelsize,
+                major_tick_length=major_tick_length,
+                major_tick_width=major_tick_width,
+                minor_tick_length=minor_tick_length,
+                minor_tick_width=minor_tick_width,
+            )
+
+        if axis_labels and plotted_any:
+            axes[0].set_ylabel("Proportion of all data", fontsize=ylabel_fontsize)
+
+        if legend and plotted_any:
+            handles, lbls = axes[0].get_legend_handles_labels()
+            by_lab = dict(zip(lbls, handles))
+            if by_lab:
+                fig.legend(
+                    by_lab.values(),
+                    by_lab.keys(),
+                    loc="upper center",
+                    ncols=min(4, len(by_lab)),
+                    fontsize=legend_fontsize,
+                    frameon=False,
+                    bbox_to_anchor=(0.5, 1.02),
+                )
+
+        plt.tight_layout()
+
+        save_path = os.path.join(plot_base_dir, save_name)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=self.dpi, bbox_inches="tight", facecolor="white")
+
+        plt.show()
+        plt.close(fig)
+
+    def plot_eval_hist_multi_separate_stacked_range(
+        self,
+        modelWrapper_dics_nested: Dict[Any, Dict[Any, Any]],
+        speciesLabel: str,
+        colors: Sequence[str],
+        labels: Optional[Union[Sequence[str], Mapping[Any, str]]] = None,
+        num_bins: int = 50,
+        K: float = 1.0,
+        figsize: Optional[Tuple[float, float]] = None,
+        axis_labels: bool = True,
+        xlabel_fontsize: float = 11.0,
+        ylabel_fontsize: float = 11.0,
+        xtick_labelsize: float = 10.0,
+        ytick_labelsize: float = 10.0,
+        legend: bool = True,
+        legend_fontsize: int = 10,
+        base_dir: Optional[str] = None,
+        save_name: str = "hist_separate_stacked_range.png",
+        time_threshold: float = 24.0,
+        sharey: bool = True,
+        density_min: Optional[float] = 1000.0,
+        density_max: Optional[float] = None,
+        show_percentages_in_title: bool = True,
+        title_fontsize: int = 10,
+        major_tick_length: float = 4.0,
+        major_tick_width: float = 1.0,
+        minor_tick_length: float = 2.5,
+        minor_tick_width: float = 0.8,
+        percentile_lines: bool = True,
+    ) -> None:
+        """
+        Plot one histogram subplot per group, split by paired (time, density) samples.
+
+        Key behaviour
+        -------------
+        1. Histogram mass is normalised over ALL paired samples, so summing all bar
+           heights over the full density domain gives 1.
+
+        2. The histogram is decomposed by sample-level time:
+             - hatched : density samples whose paired time <= time_threshold
+             - solid   : density samples whose paired time > time_threshold
+
+        3. The x-range can be restricted to [density_min, density_max] without
+           renormalising the visible bars.
+
+        Title reports
+        -------------
+        - fraction of all data with t <= time_threshold
+        - fraction of all data inside displayed density range
+        - fraction of all data that is both inside displayed density range
+          and has t <= time_threshold
+        """
+        plot_base_dir = base_dir if base_dir is not None else self.base_dir
+        outer_keys = list(modelWrapper_dics_nested.keys())
+
+        if labels is None:
+            label_map = {k: str(k) for k in outer_keys}
+        elif isinstance(labels, Mapping):
+            label_map = {k: labels.get(k, str(k)) for k in outer_keys}
+        else:
+            label_list = list(labels)
+            label_map = {
+                k: (label_list[i] if i < len(label_list) else str(k))
+                for i, k in enumerate(outer_keys)
+            }
+
+        colors = list(colors[: len(outer_keys)])
+        n_groups = len(outer_keys)
+
+        if n_groups == 0:
+            return
+
+        if figsize is None:
+            figsize = (5 * n_groups, 4.6)
+
+        fig, axes = plt.subplots(
+            1,
+            n_groups,
+            figsize=figsize,
+            sharey=sharey,
+            squeeze=False,
+        )
+        axes = axes.ravel()
+
+        plotted_any = False
+        global_xmax = None
+        collected = []
+
+        for group_key, color in zip(outer_keys, colors):
+            group_dic = modelWrapper_dics_nested[group_key]
+            wrappers = list(group_dic.values())
+
+            if not wrappers:
+                collected.append(None)
+                continue
+
+            hist_data = self._collect_group_hist_split_by_time_range(
+                wrappers=wrappers,
+                speciesLabel=speciesLabel,
+                num_bins=num_bins,
+                K=K,
+                time_threshold=time_threshold,
+                density_min=density_min,
+                density_max=density_max,
+            )
+            collected.append(hist_data)
+
+            if hist_data is not None:
+                xmax_here = hist_data["xmax_full"]
+                if xmax_here is not None:
+                    global_xmax = xmax_here if global_xmax is None else max(global_xmax, xmax_here)
+
+        for ax, group_key, color, hist_data in zip(axes, outer_keys, colors, collected):
+            label = label_map[group_key]
+
+            if hist_data is None:
+                ax.set_visible(False)
+                continue
+
+            plotted_any = True
+
+            edges_scaled = hist_data["edges_scaled"]
+            early_prop = hist_data["early_prop"]
+            late_prop = hist_data["late_prop"]
+            total_prop = hist_data["total_prop"]
+
+            low_x = hist_data["low_x"]
+            high_x = hist_data["high_x"]
+
+            frac_time_early = hist_data["frac_time_early"]
+            frac_visible = hist_data["frac_visible"]
+            frac_visible_early = hist_data["frac_visible_early"]
+
+            time_min_hours = hist_data["time_min_hours"]
+            time_max_hours = hist_data["time_max_hours"]
+
+            widths_scaled = np.diff(edges_scaled)
+
+            ax.bar(
+                edges_scaled[:-1],
+                early_prop,
+                width=widths_scaled,
+                align="edge",
+                color=color,
+                edgecolor="black",
+                linewidth=0.8,
+                hatch="///",
+                alpha=0.6,
+                label=rf"$t \leq {time_threshold:g}$ h",
+            )
+
+            ax.bar(
+                edges_scaled[:-1],
+                late_prop,
+                width=widths_scaled,
+                align="edge",
+                bottom=early_prop,
+                color=color,
+                edgecolor="black",
+                linewidth=0.8,
+                alpha=0.9,
+                label=rf"$t > {time_threshold:g}$ h",
+            )
+
+            if total_prop.size > 0 and np.any(total_prop > 0):
+                self._add_hist_outline(ax, edges_scaled, total_prop)
+
+            if percentile_lines:
+                if low_x is not None:
+                    ax.axvline(
+                        low_x,
+                        color="k",
+                        ls="-.",
+                        lw=1.2,
+                        alpha=0.8,
+                        label="5% percentile",
+                    )
+                if high_x is not None:
+                    ax.axvline(
+                        high_x,
+                        color="k",
+                        ls="--",
+                        lw=1.2,
+                        alpha=0.8,
+                        label="95% percentile",
+                    )
+
+            if show_percentages_in_title:
+                range_txt = self._format_density_range_text(density_min, density_max)
+                time_txt = self._format_time_span_text(time_min_hours, time_max_hours)
+                title = (
+                    f"{label}\n"
+                    f"{100.0 * frac_time_early:.1f}% of all data: $t \\leq {time_threshold:g}$ h\n"
+                    f"{100.0 * frac_visible:.1f}% of all data in {range_txt}; "
+                    f"{100.0 * frac_visible_early:.1f}% in {range_txt} with $t \\leq {time_threshold:g}$ h\n"
+                    f"{time_txt}"
+                )
+                ax.set_title(title, fontsize=title_fontsize)
+            else:
+                ax.set_title(str(label), fontsize=title_fontsize)
+
+            ax.grid(False)
+
+            if axis_labels:
+                ax.set_xlabel("Cell density [cells mm$^{-2}$]", fontsize=xlabel_fontsize)
+
+            x_left = density_min if density_min is not None else None
+            x_right = density_max if density_max is not None else global_xmax
+            ax.set_xlim(left=x_left, right=x_right)
+
+            self._style_axes(
+                ax,
+                xtick_labelsize=xtick_labelsize,
+                ytick_labelsize=ytick_labelsize,
+                major_tick_length=major_tick_length,
+                major_tick_width=major_tick_width,
+                minor_tick_length=minor_tick_length,
+                minor_tick_width=minor_tick_width,
+            )
+
+        if axis_labels and plotted_any:
+            axes[0].set_ylabel("Proportion of all data", fontsize=ylabel_fontsize)
+
+        if legend and plotted_any:
+            handles, lbls = axes[0].get_legend_handles_labels()
+            by_lab = dict(zip(lbls, handles))
+            if by_lab:
+                fig.legend(
+                    by_lab.values(),
+                    by_lab.keys(),
+                    loc="upper center",
+                    ncols=min(4, len(by_lab)),
+                    fontsize=legend_fontsize,
+                    frameon=False,
+                    bbox_to_anchor=(0.5, 1.04),
+                )
+
+        plt.tight_layout()
+
+        save_path = os.path.join(plot_base_dir, save_name)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=self.dpi, bbox_inches="tight", facecolor="white")
+
+        plt.show()
+        plt.close(fig)
+
+    # ------------------------------------------------------------------
+    # Core Implementation (Private Methods)
+    # ------------------------------------------------------------------
+
+    def _plot_eval_multi_std(
+        self,
+        modelWrapper_dics_nested: Dict[Any, Dict[Any, Any]],
+        speciesLabel: str,
+        colors: Sequence[str],
+        labels: Optional[Sequence[str]],
+        hist_labels: Optional[Sequence[str]],
+        device: str,
+        num_bins: int,
+        K: float,
+        name: Optional[str],
+        fill: bool,
+        legend_pos: Optional[Tuple[float, float]],
+        legend_ncols: int,
+        legend_fontsize: int,
+        linestyles: Optional[Sequence[Any]],
+        figsize: Tuple[float, float],
+        x_lim: Optional[Tuple[float, float]],
+        y_lim: Optional[Tuple[float, float]],
+        axis_labels: bool,
+        xlabel_fontsize: float,
+        ylabel_fontsize: float,
+        xtick_labelsize: float,
+        ytick_labelsize: float,
+        major_tick_length: float,
+        major_tick_width: float,
+        minor_tick_length: float,
+        minor_tick_width: float,
+        save_dic: Optional[dict],
+        save_name: Optional[str],
+        base_dir: Optional[str],
+        overwrite: Optional[bool],
+        save_dir2: Optional[str],
+        f_lambdas: CallableOrMapping,
+        sym_simp_list: StringOrMapping,
+        u_scale_SRs: ScaleOrMapping,
+        range5_95: bool,
+        show_hist: bool,
+        save_hist: bool,
+        hist_clip_5_95: bool,
+        hist_figsize: Optional[Tuple[float, float]],
+        hist_colors: Optional[Sequence[str]],
+        hist_xlabel_fontsize: Optional[float],
+        hist_ylabel_fontsize: Optional[float],
+        hist_xtick_labelsize: Optional[float],
+        hist_ytick_labelsize: Optional[float],
+        hist_major_tick_length: Optional[float],
+        hist_major_tick_width: Optional[float],
+        hist_minor_tick_length: Optional[float],
+        hist_minor_tick_width: Optional[float],
+        sym_labels: SymLabelsType,
+        mode: str,
+    ) -> None:
+        """
+        Shared implementation for diffusion/growth std plots.
+        """
+        plot_base_dir = base_dir if base_dir is not None else self.base_dir
+        plot_overwrite = overwrite if overwrite is not None else self.overwrite
+
+        target = self._build_target_path_std(
+            save_dic=save_dic,
+            save_name=save_name,
+            base_dir=plot_base_dir,
+            fallback_name=name,
+        )
+
+        out_paths = [target] if target else []
+        if should_skip_all(out_paths, plot_overwrite):
+            return
+
+        outer_keys = list(modelWrapper_dics_nested.keys())
+
+        if labels is None:
+            labels = [str(k) for k in outer_keys]
+        else:
+            labels = list(labels)
+
+        if hist_labels is None:
+            hist_labels = [f"Repl. {i + 1}" for i in range(len(outer_keys))]
+        else:
+            hist_labels = list(hist_labels)
+
+        colors = list(colors[: len(outer_keys)])
+
+        if hist_colors is None:
+            hist_colors = uMLP_colours
+
+        if len(hist_colors) < len(outer_keys):
+            hist_colors = list(itertools.islice(itertools.cycle(hist_colors), len(outer_keys)))
+        else:
+            hist_colors = list(hist_colors[: len(outer_keys)])
+
+        if linestyles is None:
+            linestyles = list(
+                itertools.islice(
+                    itertools.cycle(["-", ":", "-.", (0, (3, 1, 1, 1)), (0, (1, 1))]),
+                    len(outer_keys),
+                )
+            )
+        else:
+            linestyles = list(linestyles)
+
+        sr_inputs = self._normalize_symbolic_inputs_by_key(
+            outer_keys=outer_keys,
+            f_lambdas=f_lambdas,
+            sym_simp_list=sym_simp_list,
+            u_scale_SRs=u_scale_SRs,
+        )
+        sym_label_map = self._normalize_sym_labels_by_key(
+            outer_keys=outer_keys,
+            sym_labels=sym_labels,
+        )
+
+        sr_linestyles = [
+            "-",                # Solid
+            (0, (7, 8)),       # Dashed with large 10pt spacing
+            (0, (3, 4)),        # Dotted with large 5pt spacing
+            (0, (5, 5, 1, 5))   # Dash-dot with 5pt spacing between everything
+        ]
+
+        results = []
+        hist_results = []
+        sizes = []
+
+        for idx, (group_key, color, hist_color, label) in enumerate(
+            zip(outer_keys, colors, hist_colors, labels)
+        ):
+            hist_label = hist_labels[idx] if idx < len(hist_labels) else f"Repl. {idx + 1}"
+
+            group_dic = modelWrapper_dics_nested[group_key]
+            wrappers = list(group_dic.values())
+            if not wrappers:
+                continue
+
+            group_result = self._collect_group_data(
+                wrappers=wrappers,
+                speciesLabel=speciesLabel,
+                num_bins=num_bins,
+                mode=mode,
+                device=device,
+            )
+
+            if group_result is None:
+                continue
+
+            u_ref_np = group_result["u_ref_np"]
+            ensemble = group_result["ensemble"]
+            u_sf_group = group_result["u_sf_group"]
+            low_u_group = group_result["low_u_group"]
+            high_u_group = group_result["high_u_group"]
+
+            mean_curve = ensemble.mean(axis=0)
+            std_curve = ensemble.std(axis=0)
+
+            results.append(
+                {
+                    "group_key": group_key,
+                    "label": label,
+                    "color": color,
+                    "u_ref_np": u_ref_np,
+                    "mean": mean_curve,
+                    "std": std_curve,
+                    "u_sf_group": u_sf_group,
+                    "low_u_group": low_u_group,
+                    "high_u_group": high_u_group,
+                }
+            )
+
+            if group_result["hist_mass_mean_ref"] is not None:
+                hist_results.append(
+                    {
+                        "group_key": group_key,
+                        "label": hist_label,
+                        "color": hist_color,
+                        "edges_ref": group_result["bin_edges_ref"],
+                        "centers_ref": group_result["bin_centers_ref"],
+                        "mass_mean_ref": group_result["hist_mass_mean_ref"],
+                        "u_sf_group": u_sf_group,
+                        "low_u_group": low_u_group,
+                        "high_u_group": high_u_group,
+                    }
+                )
+
+            sizes.append(wrappers[-1].y_train.size)
+
+        n_groups = len(hist_results)
+
+        if len(sizes) > 0:
+            sizes = np.asarray(sizes, dtype=float)
+            if n_groups == 1 and np.sum(sizes) > 0:
+                sizes = sizes / np.sum(sizes)
+        else:
+            sizes = np.array([])
+
+        fig, ax = plt.subplots(figsize=figsize)
+        x_max_dom = -np.inf
+
+        for i, res in enumerate(results):
+            group_key = res["group_key"]
+            label = res["label"]
+            color = res["color"]
+            u_ref_np = res["u_ref_np"]
+            curve_mean = res["mean"]
+            curve_std = res["std"]
+            u_sf_group = float(res["u_sf_group"])
+            low_u_group = res["low_u_group"]
+            high_u_group = res["high_u_group"]
+
+            if range5_95 and (low_u_group is not None) and (high_u_group is not None):
+                lo = min(low_u_group, high_u_group)
+                hi = max(low_u_group, high_u_group)
+                mask = (u_ref_np >= lo) & (u_ref_np <= hi)
+            else:
+                mask = slice(None)
+
+            u_ref_clip = u_ref_np[mask]
+            mean_clip = curve_mean[mask]
+            std_clip = curve_std[mask]
+
+            x_phys = u_ref_clip * K * u_sf_group
+            if len(x_phys) > 0:
+                x_max_dom = max(x_max_dom, float(x_phys[-1]))
+
+            ax.plot(x_phys, mean_clip, lw=4, color=color, linestyle="-", label=label)
+
+            if fill and len(x_phys) > 0:
+                ax.fill_between(
+                    x_phys,
+                    mean_clip - std_clip,
+                    mean_clip + std_clip,
+                    alpha=0.4,
+                    color=color,
+                )
+
+            if (low_u_group is not None) and (high_u_group is not None) and (not range5_95):
+                if i == 0:
+                    labels_v = ["5% percentile", "95% percentile"]
+                else:
+                    labels_v = [None, None]
+
+                ax.axvline(
+                    low_u_group * K * u_sf_group,
+                    color=color,
+                    ls="-.",
+                    lw=1,
+                    alpha=0.7,
+                    label=labels_v[0],
+                )
+                ax.axvline(
+                    high_u_group * K * u_sf_group,
+                    color=color,
+                    ls="--",
+                    lw=1,
+                    alpha=0.7,
+                    label=labels_v[1],
+                )
+
+            sr_func = sr_inputs["f_lambdas"].get(group_key)
+            sym_text = sr_inputs["sym_simp_texts"].get(group_key)
+            u_scale_SR = float(sr_inputs["u_scale_SRs"].get(group_key, 1.0))
+
+            if sr_func is not None and len(u_ref_clip) > 0:
+                quantity_symbol = "D" if mode == "diff" else "G"
+
+                if sym_label_map.get(group_key) is not None:
+                    sym_label = sym_label_map[group_key]
+                else:
+                    if sym_text is not None:
+                        if len(results) == 1:
+                            sym_label = rf"${quantity_symbol}_{{SR}}(U) = {sym_text}$"
+                        else:
+                            sym_label = rf"${quantity_symbol}_{{SR,{group_key}}}(U) = {sym_text}$"
+                    else:
+                        if len(results) == 1:
+                            sym_label = rf"${quantity_symbol}_{{SR}}(U)$"
+                        else:
+                            sym_label = rf"${quantity_symbol}_{{SR,{group_key}}}(U)$"
+
+                sym_vals = sr_func(u_ref_clip * u_scale_SR)
+
+                ax.plot(
+                    x_phys,
+                    sym_vals,
+                    color="red",
+                    lw=2,
+                    linestyle=sr_linestyles[i % len(sr_linestyles)],
+                    label=sym_label,
+                )
+
+        if axis_labels:
+            ax.set_xlabel("Cell density [cells mm$^{-2}$]", fontsize=xlabel_fontsize)
+            if mode == "diff":
+                ax.set_ylabel(r"Diffusion [mm$^2$ days$^{-1}$]", fontsize=ylabel_fontsize)
+            else:
+                ax.set_ylabel(r"Growth [days$^{-1}$]", fontsize=ylabel_fontsize)
+
+        self._style_axes(
+            ax,
+            xtick_labelsize=xtick_labelsize,
+            ytick_labelsize=ytick_labelsize,
+            major_tick_length=major_tick_length,
+            major_tick_width=major_tick_width,
+            minor_tick_length=minor_tick_length,
+            minor_tick_width=minor_tick_width,
+        )
+
+        ax.set_facecolor("white")
+
+        if x_lim:
+            ax.set_xlim(x_lim)
+        elif not range5_95 and np.isfinite(x_max_dom):
+            ax.set_xlim(left=None, right=x_max_dom)
+
+        if y_lim:
+            ax.set_ylim(y_lim)
+
+        if legend_pos is not None:
+            ax.legend(
+                loc="lower right",
+                bbox_to_anchor=legend_pos,
+                ncols=legend_ncols,
+                fontsize=legend_fontsize,
+            )
+
+        ax.grid(False)
+        plt.tight_layout()
+
+        if target:
+            save_figure(fig, target, overwrite=plot_overwrite, dpi=self.dpi)
+            if save_dir2 and save_name is not None:
+                base_sn, ext_sn = os.path.splitext(save_name)
+                save_name_std = f"{base_sn}_std{ext_sn or '.png'}"
+                save_figure(
+                    fig,
+                    f"present/{save_dir2}/{save_name_std}",
+                    overwrite=plot_overwrite,
+                    dpi=self.dpi,
+                    mkdir_dir=True,
+                )
+
+        plt.show()
+        plt.close(fig)
+
+        if show_hist and hist_results:
+            hist_size = hist_figsize if hist_figsize is not None else figsize
+            self._plot_histograms(
+                hist_results=hist_results,
+                K=K,
+                axis_labels=axis_labels,
+                xlabel_fontsize=xlabel_fontsize if hist_xlabel_fontsize is None else hist_xlabel_fontsize,
+                ylabel_fontsize=ylabel_fontsize if hist_ylabel_fontsize is None else hist_ylabel_fontsize,
+                xtick_labelsize=xtick_labelsize if hist_xtick_labelsize is None else hist_xtick_labelsize,
+                ytick_labelsize=ytick_labelsize if hist_ytick_labelsize is None else hist_ytick_labelsize,
+                major_tick_length=major_tick_length if hist_major_tick_length is None else hist_major_tick_length,
+                major_tick_width=major_tick_width if hist_major_tick_width is None else hist_major_tick_width,
+                minor_tick_length=minor_tick_length if hist_minor_tick_length is None else hist_minor_tick_length,
+                minor_tick_width=minor_tick_width if hist_minor_tick_width is None else hist_minor_tick_width,
+                legend_ncols=legend_ncols,
+                legend_fontsize=legend_fontsize,
+                figsize=hist_size,
+                sizes=sizes,
+                n_groups=n_groups,
+                hist_clip_5_95=hist_clip_5_95,
+                target=target,
+                save_hist=save_hist,
+                overwrite=plot_overwrite,
+                legend_loc="best",
+                hist_suffix=True,
+            )
+
+    # ------------------------------------------------------------------
+    # Internal Helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _style_axes(
+        ax: Any,
+        xtick_labelsize: float,
+        ytick_labelsize: float,
+        major_tick_length: float,
+        major_tick_width: float,
+        minor_tick_length: float,
+        minor_tick_width: float,
+    ) -> None:
+        """
+        Apply explicit tick-label and tick styling.
+        """
+        ax.tick_params(
+            axis="x",
+            which="major",
+            labelsize=xtick_labelsize,
+            length=major_tick_length,
+            width=major_tick_width,
+        )
+        ax.tick_params(
+            axis="y",
+            which="major",
+            labelsize=ytick_labelsize,
+            length=major_tick_length,
+            width=major_tick_width,
+        )
+        ax.tick_params(
+            axis="x",
+            which="minor",
+            length=minor_tick_length,
+            width=minor_tick_width,
+        )
+        ax.tick_params(
+            axis="y",
+            which="minor",
+            length=minor_tick_length,
+            width=minor_tick_width,
+        )
+
+    def _plot_histograms(
+        self,
+        hist_results: List[Dict[str, Any]],
+        K: float,
+        axis_labels: bool,
+        xlabel_fontsize: float,
+        ylabel_fontsize: float,
+        xtick_labelsize: float,
+        ytick_labelsize: float,
+        major_tick_length: float,
+        major_tick_width: float,
+        minor_tick_length: float,
+        minor_tick_width: float,
+        legend_ncols: int,
+        legend_fontsize: int,
+        figsize: Tuple[float, float],
+        sizes: np.ndarray,
+        n_groups: int,
+        hist_clip_5_95: bool,
+        target: Optional[str] = None,
+        save_hist: bool = True,
+        overwrite: bool = False,
+        legend_loc: str = "best",
+        hist_suffix: bool = True,
+    ) -> None:
+        """
+        Plot only the histogram figure from precomputed histogram results.
+        """
+        if not hist_results:
+            return
+
+        fig_h, ax_h = plt.subplots(figsize=figsize)
+
+        for j, hist_res in enumerate(hist_results):
+            edges_ref = np.asarray(hist_res["edges_ref"], dtype=float).copy()
+            centers_ref = np.asarray(hist_res["centers_ref"], dtype=float).copy()
+            mass_mean_ref = np.asarray(hist_res["mass_mean_ref"], dtype=float).copy()
+
+            label = hist_res["label"]
+            color = hist_res["color"]
+            u_sf_group = float(hist_res["u_sf_group"])
+            low_u_group = hist_res["low_u_group"]
+            high_u_group = hist_res["high_u_group"]
+
+            if hist_clip_5_95 and (low_u_group is not None) and (high_u_group is not None):
+                lo = min(low_u_group, high_u_group)
+                hi = max(low_u_group, high_u_group)
+
+                mask = (centers_ref >= lo) & (centers_ref <= hi)
+                idx = np.where(mask)[0]
+
+                if len(idx) == 0:
+                    continue
+
+                centers_ref = centers_ref[mask]
+                mass_mean_ref = mass_mean_ref[mask]
+
+                e0, e1 = idx[0], idx[-1] + 1
+                edges_ref = edges_ref[e0 : e1 + 1]
+
+            if n_groups > 1:
+                density = mass_mean_ref
+            else:
+                density = mass_mean_ref * (sizes[j] if len(sizes) > j else 1.0)
+
+            edges_scaled = edges_ref * K * u_sf_group
+            widths_scaled = np.diff(edges_scaled)
+
+            ax_h.bar(
+                edges_scaled[:-1],
+                density,
+                width=widths_scaled,
+                align="edge",
+                alpha=0.5,
+                color=color,
+                edgecolor="none",
+                label=label,
+            )
+
+            if density.size > 0 and np.any(density > 0):
+                self._add_hist_outline(ax_h, edges_scaled, density)
+
+            if (low_u_group is not None) and (high_u_group is not None):
+                ax_h.axvline(
+                    low_u_group * K * u_sf_group,
+                    color=color,
+                    ls="-.",
+                    lw=2,
+                    alpha=1.0,
+                    label="5% percentile" if j == 0 else None,
+                )
+                ax_h.axvline(
+                    high_u_group * K * u_sf_group,
+                    color=color,
+                    ls="--",
+                    lw=2,
+                    alpha=1.0,
+                    label="95% percentile" if j == 0 else None,
+                )
+
+        if axis_labels:
+            ax_h.set_xlabel("Cell density [cells mm$^{-2}$]", fontsize=xlabel_fontsize)
+            ax_h.set_ylabel("Frequency", fontsize=ylabel_fontsize)
+
+        self._style_axes(
+            ax_h,
+            xtick_labelsize=xtick_labelsize,
+            ytick_labelsize=ytick_labelsize,
+            major_tick_length=major_tick_length,
+            major_tick_width=major_tick_width,
+            minor_tick_length=minor_tick_length,
+            minor_tick_width=minor_tick_width,
+        )
+
+        handles, lbls = ax_h.get_legend_handles_labels()
+        by_lab = dict(zip(lbls, handles))
+        if by_lab:
+            ax_h.legend(
+                by_lab.values(),
+                by_lab.keys(),
+                loc=legend_loc,
+                ncols=legend_ncols,
+                fontsize=legend_fontsize,
+            )
+
+        ax_h.grid(False)
+        plt.tight_layout()
+
+        if target and save_hist:
+            if hist_suffix:
+                base, ext = os.path.splitext(target)
+                target_hist = f"{base}_hist{ext or '.png'}"
+                target_hist = target_hist.replace("_hist", "_std-hist")
+            else:
+                target_hist = target
+            save_figure(fig_h, target_hist, overwrite=overwrite, dpi=self.dpi)
+
+        plt.show()
+        plt.close(fig_h)
+
+    def _collect_group_data(
+        self,
+        wrappers: List[Any],
+        speciesLabel: str,
+        num_bins: int,
+        mode: str,
+        device: str,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Collect ensemble curve data and histogram data for one group.
+        """
+        u_ref_np = None
+        ensemble_list = []
+        u_sfs = []
+
+        bin_centers_ref = None
+        bin_edges_ref = None
+        mass_on_ref_list = []
+
+        group_low_us = []
+        group_high_us = []
+
+        for i, wrapper in enumerate(wrappers):
+            sample_model = wrapper.model
+            u_vals_np = np.asarray(sample_model.u_vals).flatten()
+            u_vals_torch = sample_model.u_vals_torch
+
+            u_sf = self._get_u_scale(sample_model, speciesLabel)
+            u_sfs.append(float(u_sf))
+
+            sample_model.eval()
+            with torch.no_grad():
+                if mode == "diff":
+                    pred = sample_model.D_scale * sample_model.diffusion(u_vals_torch).flatten()
+                elif mode == "grow":
+                    pred = sample_model.G_scale * sample_model.growth(u_vals_torch).flatten()
+                else:
+                    raise ValueError(f"Unknown mode '{mode}'. Expected 'diff' or 'grow'.")
+
+            pred_np = pred.detach().cpu().numpy()
+
+            if i == 0:
+                sort_idx_ref = np.argsort(u_vals_np)
+                u_ref_np = u_vals_np[sort_idx_ref]
+                ensemble_list.append(pred_np[sort_idx_ref][None, :])
+            else:
+                sort_idx = np.argsort(u_vals_np)
+                u_sorted = u_vals_np[sort_idx]
+                pred_sorted = pred_np[sort_idx]
+                pred_on_ref = np.interp(u_ref_np, u_sorted, pred_sorted)
+                ensemble_list.append(pred_on_ref[None, :])
+
+            h_props = hist_properties_wrapper(wrapper, num_bins=num_bins)
+
+            if i == 0:
+                bin_centers_ref = np.asarray(h_props["bin_centers"], dtype=float)
+                bin_edges_ref = np.asarray(h_props["bin_edges"], dtype=float)
+
+            hist_counts = np.asarray(h_props["hist"].detach().cpu().numpy(), dtype=float)
+            bin_centers_w = np.asarray(h_props["bin_centers"], dtype=float)
+
+            sort_idx_bins = np.argsort(bin_centers_w)
+            mass_on_ref = np.interp(
+                bin_centers_ref,
+                bin_centers_w[sort_idx_bins],
+                hist_counts[sort_idx_bins],
+                left=0.0,
+                right=0.0,
+            )
+            mass_on_ref_list.append(mass_on_ref)
+
+            group_low_us.append(float(h_props["low_count"]))
+            group_high_us.append(float(h_props["high_count"]))
+
+        if not ensemble_list:
+            return None
+
+        ensemble = np.concatenate(ensemble_list, axis=0)
+        u_sf_group = float(np.mean(u_sfs))
+
+        low_u_group = float(np.mean(group_low_us)) if group_low_us else None
+        high_u_group = float(np.mean(group_high_us)) if group_high_us else None
+
+        hist_mass_mean_ref = None
+        if mass_on_ref_list and (bin_centers_ref is not None) and (bin_edges_ref is not None):
+            mass_on_ref_stack = np.vstack(mass_on_ref_list)
+            hist_mass_mean_ref = mass_on_ref_stack.mean(axis=0)
+
+        return {
+            "u_ref_np": u_ref_np,
+            "ensemble": ensemble,
+            "u_sf_group": u_sf_group,
+            "low_u_group": low_u_group,
+            "high_u_group": high_u_group,
+            "bin_centers_ref": bin_centers_ref,
+            "bin_edges_ref": bin_edges_ref,
+            "hist_mass_mean_ref": hist_mass_mean_ref,
+        }
+
+    def _collect_group_hist_split_by_time_range(
+        self,
+        wrappers: List[Any],
+        speciesLabel: str,
+        num_bins: int,
+        K: float,
+        time_threshold: float,
+        density_min: Optional[float] = None,
+        density_max: Optional[float] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Build histogram using paired (time, density) samples.
+
+        Normalisation
+        -------------
+        Let N be the total number of valid paired samples across all wrappers in the group.
+        Then each bin height is:
+            count_in_bin / N
+        so the sum of all bar heights over the full density support is 1.
+
+        Early/late split
+        ----------------
+        Uses the paired time of each density sample:
+            early : t <= time_threshold
+            late  : t > time_threshold
+        """
+        all_density_raw = []
+        all_time_hours = []
+        u_sfs = []
+
+        for wrapper in wrappers:
+            sample_model = wrapper.model
+            u_sf = self._get_u_scale(sample_model, speciesLabel)
+            u_sfs.append(float(u_sf))
+
+            t_arr = self._get_wrapper_time(wrapper)
+            d_arr = self._get_wrapper_density(wrapper)
+
+            if t_arr is None or d_arr is None:
+                continue
+
+            t_arr = np.asarray(t_arr, dtype=float).flatten()
+            d_arr = np.asarray(d_arr, dtype=float).flatten()
+
+            n = min(t_arr.size, d_arr.size)
+            if n == 0:
+                continue
+
+            t_arr = t_arr[:n]
+            d_arr = d_arr[:n]
+
+            valid = np.isfinite(t_arr) & np.isfinite(d_arr)
+            if not np.any(valid):
+                continue
+
+            all_time_hours.append(t_arr[valid])
+            all_density_raw.append(d_arr[valid])
+
+        if len(all_density_raw) == 0:
+            return None
+
+        densities_raw = np.concatenate(all_density_raw, axis=0)
+        times_hours = np.concatenate(all_time_hours, axis=0)
+
+        if densities_raw.size == 0:
+            return None
+
+        u_sf_group = float(np.mean(u_sfs)) if len(u_sfs) > 0 else 1.0
+
+        densities_phys = densities_raw * K * u_sf_group
+
+        finite = np.isfinite(densities_phys) & np.isfinite(times_hours)
+        densities_phys = densities_phys[finite]
+        times_hours = times_hours[finite]
+
+        if densities_phys.size == 0:
+            return None
+
+        data_min = float(np.min(densities_phys))
+        data_max = float(np.max(densities_phys))
+
+        if np.isclose(data_min, data_max):
+            eps = 1e-12 if data_min == 0 else abs(data_min) * 1e-9
+            data_min -= eps
+            data_max += eps
+
+        edges_scaled_full = np.linspace(data_min, data_max, num_bins + 1)
+
+        early_sample_mask = times_hours <= time_threshold
+        late_sample_mask = ~early_sample_mask
+
+        total_counts_full, _ = np.histogram(densities_phys, bins=edges_scaled_full)
+        early_counts_full, _ = np.histogram(densities_phys[early_sample_mask], bins=edges_scaled_full)
+        late_counts_full, _ = np.histogram(densities_phys[late_sample_mask], bins=edges_scaled_full)
+
+        n_total = float(densities_phys.size)
+        total_prop_full = total_counts_full.astype(float) / n_total
+        early_prop_full = early_counts_full.astype(float) / n_total
+        late_prop_full = late_counts_full.astype(float) / n_total
+
+        centers_scaled_full = 0.5 * (edges_scaled_full[:-1] + edges_scaled_full[1:])
+
+        display_mask = np.ones_like(centers_scaled_full, dtype=bool)
+        if density_min is not None:
+            display_mask &= centers_scaled_full >= density_min
+        if density_max is not None:
+            display_mask &= centers_scaled_full <= density_max
+
+        idx = np.where(display_mask)[0]
+        if len(idx) == 0:
+            return None
+
+        i0 = idx[0]
+        i1 = idx[-1]
+
+        edges_scaled = edges_scaled_full[i0 : i1 + 2]
+        early_prop = early_prop_full[display_mask]
+        late_prop = late_prop_full[display_mask]
+        total_prop = total_prop_full[display_mask]
+
+        frac_time_early = float(np.sum(early_sample_mask)) / n_total
+        frac_visible = float(np.sum(total_prop))
+        frac_visible_early = float(np.sum(early_prop))
+
+        low_x = float(np.percentile(densities_phys, 5.0))
+        high_x = float(np.percentile(densities_phys, 95.0))
+
+        time_min_hours = float(np.min(times_hours))
+        time_max_hours = float(np.max(times_hours))
+
+        return {
+            "edges_scaled": edges_scaled,
+            "early_prop": early_prop,
+            "late_prop": late_prop,
+            "total_prop": total_prop,
+            "low_x": low_x,
+            "high_x": high_x,
+            "xmax_full": float(edges_scaled_full[-1]),
+            "frac_time_early": frac_time_early,
+            "frac_visible": frac_visible,
+            "frac_visible_early": frac_visible_early,
+            "time_min_hours": time_min_hours,
+            "time_max_hours": time_max_hours,
+        }
+
+    @staticmethod
+    def _get_wrapper_time(wrapper: Any) -> Optional[np.ndarray]:
+        """
+        Return array of times corresponding to density samples.
+        """
+        candidate_attrs = [
+            "x_val",
+        ]
+
+        for attr in candidate_attrs:
+            if hasattr(wrapper, attr):
+                value = getattr(wrapper, attr)
+                t_value = value[..., -1] * 24
+                try:
+                    arr = np.asarray(t_value, dtype=float).flatten()
+                    if arr.size > 0:
+                        return arr
+                except Exception:
+                    pass
+
+        return None
+
+    @staticmethod
+    def _get_wrapper_density(wrapper: Any) -> Optional[np.ndarray]:
+        """
+        Return array of densities corresponding to time samples.
+        """
+        candidate_attrs = [
+            "y_val",
+        ]
+
+        for attr in candidate_attrs:
+            if hasattr(wrapper, attr):
+                value = getattr(wrapper, attr)
+                try:
+                    arr = np.asarray(value, dtype=float).flatten()
+                    if arr.size > 0:
+                        return arr
+                except Exception:
+                    pass
+
+        return None
+
+    @staticmethod
+    def _get_u_scale(sample_model: Any, speciesLabel: str) -> float:
+        """
+        Get per-wrapper u scale from the model and species label.
+        """
+        if speciesLabel == "red":
+            return float(sample_model.u_red_max) * 1e6
+        if speciesLabel == "green":
+            return float(sample_model.u_green_max) * 1e6
+        return 1.0
+
+    @staticmethod
+    def _normalize_symbolic_inputs_by_key(
+        outer_keys: Sequence[Any],
+        f_lambdas: CallableOrMapping,
+        sym_simp_list: StringOrMapping,
+        u_scale_SRs: ScaleOrMapping,
+    ) -> Dict[str, Dict[Any, Any]]:
+        """
+        Normalize symbolic-regression inputs to dictionaries keyed by group key.
+
+        Accepted inputs:
+        - mapping keyed by group key
+        - single callable / single string / single float
+        - sequence, which will be zipped to outer_keys in order
+          (kept for backward compatibility)
+        """
+        if f_lambdas is None:
+            f_dict: Dict[Any, Optional[Callable[[ArrayLike], ArrayLike]]] = {
+                key: None for key in outer_keys
+            }
+        elif callable(f_lambdas):
+            f_dict = {key: f_lambdas for key in outer_keys}
+        elif isinstance(f_lambdas, Mapping):
+            f_dict = {key: f_lambdas.get(key) for key in outer_keys}
+        else:
+            f_list = list(f_lambdas)
+            f_dict = {
+                key: (f_list[i] if i < len(f_list) else None)
+                for i, key in enumerate(outer_keys)
+            }
+
+        if sym_simp_list is None:
+            sym_dict: Dict[Any, Optional[str]] = {key: None for key in outer_keys}
+        elif isinstance(sym_simp_list, str):
+            sym_dict = {key: sym_simp_list for key in outer_keys}
+        elif isinstance(sym_simp_list, Mapping):
+            sym_dict = {key: sym_simp_list.get(key) for key in outer_keys}
+        else:
+            sym_list = list(sym_simp_list)
+            sym_dict = {
+                key: (sym_list[i] if i < len(sym_list) else None)
+                for i, key in enumerate(outer_keys)
+            }
+
+        if u_scale_SRs is None:
+            scale_dict: Dict[Any, float] = {key: 1.0 for key in outer_keys}
+        elif isinstance(u_scale_SRs, Mapping):
+            scale_dict = {key: float(u_scale_SRs.get(key, 1.0)) for key in outer_keys}
+        elif isinstance(u_scale_SRs, (list, tuple)):
+            scale_list = [float(v) for v in u_scale_SRs]
+            scale_dict = {
+                key: (scale_list[i] if i < len(scale_list) else 1.0)
+                for i, key in enumerate(outer_keys)
+            }
+        else:
+            scale_dict = {key: float(u_scale_SRs) for key in outer_keys}
+
+        return {
+            "f_lambdas": f_dict,
+            "sym_simp_texts": sym_dict,
+            "u_scale_SRs": scale_dict,
+        }
+
+    @staticmethod
+    def _normalize_sym_labels_by_key(
+        outer_keys: Sequence[Any],
+        sym_labels: SymLabelsType,
+    ) -> Dict[Any, Optional[str]]:
+        """
+        Normalize symbolic labels to a dictionary keyed by group key.
+
+        Accepted inputs:
+        - None -> use DEFAULT_SYM_LABELS where keys match, else None
+        - mapping keyed by group key
+        - single string reused for all keys
+        - sequence zipped to outer_keys in order
+        """
+        if sym_labels is None:
+            return {key: DEFAULT_SYM_LABELS.get(key) for key in outer_keys}
+
+        if isinstance(sym_labels, str):
+            return {key: sym_labels for key in outer_keys}
+
+        if isinstance(sym_labels, Mapping):
+            return {key: sym_labels.get(key, DEFAULT_SYM_LABELS.get(key)) for key in outer_keys}
+
+        sym_list = list(sym_labels)
+        return {
+            key: (sym_list[i] if i < len(sym_list) else DEFAULT_SYM_LABELS.get(key))
+            for i, key in enumerate(outer_keys)
+        }
+
+    @staticmethod
+    def _build_target_path_std(
+        save_dic: Optional[dict],
+        save_name: Optional[str],
+        base_dir: str,
+        fallback_name: Optional[str],
+    ) -> Optional[str]:
+        """
+        Build output path and append _std before the extension.
+        """
+        if save_name is not None:
+            target_base = build_save_path(save_dic, save_name, base_dir)
+        else:
+            target_base = fallback_name
+
+        if target_base:
+            base, ext = os.path.splitext(target_base)
+            return f"{base}_std{ext or '.png'}"
+        return None
+
+    @staticmethod
+    def _add_hist_outline(ax: Any, edges: np.ndarray, heights: np.ndarray) -> None:
+        """
+        Add a polygon outline around histogram bars.
+        """
+        verts = []
+        verts.append((edges[0], 0.0))
+        verts.append((edges[0], float(heights[0])))
+
+        for ii in range(len(heights)):
+            verts.append((edges[ii + 1], float(heights[ii])))
+            if ii < len(heights) - 1 and heights[ii + 1] != heights[ii]:
+                verts.append((edges[ii + 1], float(heights[ii + 1])))
+
+        verts.append((edges[-1], 0.0))
+
+        poly = Polygon(
+            verts,
+            closed=True,
+            fill=False,
+            edgecolor="black",
+            linewidth=1.2,
+            joinstyle="miter",
+            zorder=5,
+        )
+        ax.add_patch(poly)
+
+    @staticmethod
+    def _format_density_range_text(
+        density_min: Optional[float],
+        density_max: Optional[float],
+    ) -> str:
+        if density_min is not None and density_max is not None:
+            return rf"$[{density_min:g}, {density_max:g}]$"
+        if density_min is not None:
+            return rf"$[{density_min:g}, \infty)$"
+        if density_max is not None:
+            return rf"$(-\infty, {density_max:g}]$"
+        return "full range"
+
+    @staticmethod
+    def _format_time_span_text(
+        time_min_hours: Optional[float],
+        time_max_hours: Optional[float],
+    ) -> str:
+        if time_min_hours is None or time_max_hours is None:
+            return "time range unavailable"
+        return f"time range: {time_min_hours:g}–{time_max_hours:g} h"
+
+
+__all__ = ["SRPlotter", "uMLP_colours", "DEFAULT_SYM_LABELS"]

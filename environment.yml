@@ -1,0 +1,23 @@
+name: pinn-rd-2dt
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - sympy
+  - pytorch
+  - torchvision
+  - torchaudio
+  - jupyterlab
+  - notebook
+  - ipykernel
+  - dill
+  - imageio
+  - seaborn
+  - pip:
+      - pysr
