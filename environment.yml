@@ -3,21 +3,18 @@ channels:
   - pytorch
   - conda-forge
 dependencies:
-  - python=3.11
+  - python=3.11.15
   - pip
-  - numpy
-  - scipy
-  - pandas
-  - matplotlib
-  - sympy
-  - pytorch
-  - torchvision
-  - torchaudio
+  - numpy=2.4.3
+  - scipy=1.17.1
+  - pandas=3.0.2
+  - matplotlib=3.10.8
+  - sympy=1.14.0
+  - pytorch=2.5.1
   - jupyterlab
   - notebook
   - ipykernel
   - dill
   - imageio
-  - seaborn
   - pip:
-      - pysr
+      - pysr==1.5.10

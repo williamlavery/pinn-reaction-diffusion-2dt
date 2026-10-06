@@ -20,20 +20,22 @@ The schematic of the pipeline used to apply the PINN framework to the experiment
 ```text
 pinn-reaction-diffusion-2dt/
 ├── README.md
+├── LICENSE
 ├── environment.yml
-├── preview.pdf
+├── requirements.txt
 ├── pipeline_schematic.png
 └── main/
 	├── README.md
 	├── data/
-	│   └── python_v2/
+	│   ├── split_csvs/              # experimental CSV splits
+	│   └── python_v2/               # data-processing pipeline
 	│       ├── README.md
 	│       ├── config/
 	│       ├── components/
 	│       ├── exec/
 	│       ├── modules/
-	│       └── runs/
-	├── dataObj_v2/
+	│       └── runs/                # generated
+	├── dataObj_v2/                  # binned data objects
 	├── binn_v2/
 	│   ├── README.md
 	│   ├── python/
@@ -51,15 +53,20 @@ pinn-reaction-diffusion-2dt/
 	│   │           ├── Gradient.py
 	│   │           ├── ModelWrapper.py
 	│   │           └── PDESolver_2D.py
-	│   └── runs/
-	├── binn_v2_models/
-	├── binn_v2_models_updated/
+	│   └── runs/                    # generated
+	├── binn_v2_models_updated/      # trained models
 	└── JN/
 		├── README.md
 		├── paper_notebook.ipynb
 		├── paper_helpers/
 		└── outputs/
+		    ├── sr_updated/             # cached SR fits
+		    └── figures/, tables/, ...  # generated
 ```
+
+Directories marked `# generated` are not tracked in git. They are created when you run
+the pipeline or the notebook; everything else ships with the repository, so
+`paper_notebook.ipynb` can be run without first retraining anything.
 
 ## Environment setup
 

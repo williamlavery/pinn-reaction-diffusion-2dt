@@ -33,7 +33,7 @@ There are three levels: defaults, pipeline wiring, and model consumption.
 
 1. Defaults (experiment-level)
 
-- File: `Training/binn_v2/python/pipeline/config/experiment_config.py`
+- File: `main/binn_v2/python/pipeline/config/experiment_config.py`
 - Class: `BinnParams`
 - Key defaults include:
   - `all_constraints`
@@ -47,7 +47,7 @@ There are three levels: defaults, pipeline wiring, and model consumption.
 
 2. Pipeline wiring (parameter mapping)
 
-- File: `Training/binn_v2/python/pipeline/exec/binn_exec.py`
+- File: `main/binn_v2/python/pipeline/exec/binn_exec.py`
 - Function: `build_base_payload`
 - The defaults above are mapped into runtime dictionaries:
   - `model_params["binn_model_params"]["binn_construction_params"]`
@@ -56,7 +56,7 @@ There are three levels: defaults, pipeline wiring, and model consumption.
 
 3. Model consumption (actual behavior)
 
-- File: `Training/binn_v2/python/Modules/Models/BuildBINNs_2D.py`
+- File: `main/binn_v2/python/Modules/Models/BuildBINNs_2D.py`
 - In `BINN_2d.__init__`, these values are read and used to build the model and loss terms.
 
 ## Loss weights used in the model
@@ -84,9 +84,9 @@ This section explains the defaults currently used by the BINN pipeline and what 
 ### 1) `all_constraints`
 
 - Default value:
-  - `0` (from `BinnParams.all_constraints` in `Training/binn_v2/python/pipeline/config/experiment_config.py`)
+  - `0` (from `BinnParams.all_constraints` in `main/binn_v2/python/pipeline/config/experiment_config.py`)
 - Runtime mapping:
-  - `binn_construction_params["allConstraints"]` in `Training/binn_v2/python/pipeline/exec/binn_exec.py`
+  - `binn_construction_params["allConstraints"]` in `main/binn_v2/python/pipeline/exec/binn_exec.py`
 - Model usage:
   - read in `BINN_2d.__init__` (`BuildBINNs_2D.py`) as `self.allConstraints`
   - gate in `apply_constraints`: `if not self.allConstraints: return`
@@ -111,7 +111,7 @@ When enabled (`1`):
 - Runtime mapping:
   - `pde_loss_params["BCbool"]` in `binn_exec.py`
 - Dispatch location:
-  - `bn_model_pde_loss_func` in `Training/binn_v2/python/pipeline/components/simulate.py`
+  - `bn_model_pde_loss_func` in `main/binn_v2/python/pipeline/components/simulate.py`
 
 Consequence at default (`0`):
 
@@ -178,7 +178,7 @@ Data loss (MSE vs GLS):
 
 - Select label in config: `BNdataLossFuncLabel`
 - Wiring and dispatch:
-  - `Training/binn_v2/python/pipeline/components/simulate.py`
+  - `main/binn_v2/python/pipeline/components/simulate.py`
   - `bn_model_data_loss_func`
 - Implementations in:
   - `BuildBINNs_2D.py`: `data_loss_MSE`, `data_loss_GLS`

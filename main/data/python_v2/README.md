@@ -14,12 +14,12 @@ The goal of this component is to make data fully inspectable and simple to rerun
 
 ## Inputs and outputs
 
-- Main input CSVs: `Training/data/split_csvs/`
+- Main input CSVs: `main/data/split_csvs/`
 - Main simulation settings: `config/experiment_config.py`
-- Generated artifacts: `Training/dataObj_v2/.../data_obj.npy`
-- Run metadata directory: `Training/data/python_v2/runs/run_YYYYMMDD_HHMMSS/`
+- Generated artifacts: `main/dataObj_v2/.../data_obj.npy`
+- Run metadata directory: `main/data/python_v2/runs/run_YYYYMMDD_HHMMSS/`
 - Run metadata files in each run directory: `run_header.json`, `records.jsonl`, `summary.json`
-- Global run index: `Training/data/python_v2/runs/run_index.jsonl`
+- Global run index: `main/data/python_v2/runs/run_index.jsonl`
 
 ## Quick start
 

@@ -1,6 +1,6 @@
 # paper_helpers
 
-Helper modules used by `Training/JN/paper_notebook.ipynb` for paper-ready analysis, plotting, forward simulation, and symbolic-regression workflows.
+Helper modules used by `main/JN/paper_notebook.ipynb` for paper-ready analysis, plotting, forward simulation, and symbolic-regression workflows.
 
 ## Visualization helpers (figure generation and diagnostics)
 

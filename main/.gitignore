@@ -33,10 +33,16 @@ env/
 *.tmp
 *.swp
 
+# Tracked artifacts (shipped with the repo so the notebook runs as-is):
+#   dataObj_v2/             binned data objects
+#   binn_v2_models_updated/ trained models
+
 # Project-generated artifacts (rebuildable)
-dataObj_v2/
+# binn_v2_models/ is where binn_exec writes a fresh training run:
 binn_v2_models/
 binn_v2_models_old/
 binn_v2/runs/
 data/python_v2/runs/
-JN/outputs/
+JN/outputs/*
+# ...except the cached SR fits, which ship so the notebook does not refit:
+!JN/outputs/sr_updated/

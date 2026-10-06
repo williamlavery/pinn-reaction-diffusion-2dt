@@ -23,7 +23,21 @@ def find_data_obj_files(start_dir: str, target_filename: str = "data_obj.npy") -
     List[str]
         A list of absolute or relative paths (depending on ``start_dir``)
         to files matching ``target_filename``.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``start_dir`` does not exist. ``os.walk`` would otherwise return no
+        matches silently, which looks identical to "the directory is empty".
     """
+    if not os.path.isdir(start_dir):
+        raise FileNotFoundError(
+            f"Search root does not exist: {start_dir!r} "
+            f"(resolved to {os.path.abspath(start_dir)}). "
+            "Generated artifacts are missing -- see main/README.md for the commands "
+            "that create dataObj_v2/ and binn_v2_models/."
+        )
+
     matches: List[str] = []
 
     for root, dirs, files in os.walk(start_dir):

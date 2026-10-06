@@ -16,11 +16,11 @@ This package is designed so a user can:
 
 ## Inputs and outputs
 
-- Expected inputs: `Training/dataObj_v2/.../data_obj.npy`
-- Trained model outputs: `Training/binn_v2_models/...`
-- Run metadata directory: `Training/binn_v2/runs/run_YYYYMMDD_HHMMSS/`
+- Expected inputs: `main/dataObj_v2/.../data_obj.npy`
+- Trained model outputs: `main/binn_v2_models/...`
+- Run metadata directory: `main/binn_v2/runs/run_YYYYMMDD_HHMMSS/`
 - Run metadata files in each run directory: `run_header.json`, `records.jsonl`, `summary.json`
-- Global run index: `Training/binn_v2/runs/run_index.jsonl`
+- Global run index: `main/binn_v2/runs/run_index.jsonl`
 
 ## Quick start
 

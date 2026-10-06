@@ -11,7 +11,7 @@ This folder stores per-timepoint CSV files of cell-coordinate observations used 
   - column 2: `y` coordinate
 - If extra columns exist, they are ignored by the loader.
 
-Code reference: `Training/data/python_v2/modules/data_class.py` (`read_points_csv`) reads files with `pd.read_csv(..., header=None)` and uses `df.iloc[:, :2]`.
+Code reference: `main/data/python_v2/modules/data_class.py` (`read_points_csv`) reads files with `pd.read_csv(..., header=None)` and uses `df.iloc[:, :2]`.
 
 ## Filename format
 
@@ -50,7 +50,7 @@ This means:
 
 The suffix is generated in:
 
-- `Training/data/python_v2/modules/data_class.py`
+- `main/data/python_v2/modules/data_class.py`
 
 using:
 
