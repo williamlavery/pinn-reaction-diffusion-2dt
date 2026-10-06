@@ -8,7 +8,7 @@ We introduce a framework that combines data preprocessing, BINN-based equation l
 
 Readily applicable to other spatio-temporal systems, this framework provides a practical and interpretable tool for fast analytic equation discovery from data.
 
-For more detail see the [manuscript](https://arxiv.org/abs/2604.18548).
+For more detail see the manuscript (reference withheld for anonymous review).
 
 
 ## Pipeline
@@ -98,17 +98,7 @@ Quick validation commands are documented in [main/README.md](main/README.md), si
 
 ## Citation
 
-```
-@misc{lavery2026physicsinformedneuralnetworksbiological,
-      title={Physics-Informed Neural Networks for Biological $2\mathrm{D}{+}t$ Reaction-Diffusion Systems}, 
-      author={William Lavery and Jodie A. Cochrane and Christian Olesen and Dagim S. Tadele and John T. Nardini and Sara Hamis},
-      year={2026},
-      eprint={2604.18548},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2604.18548}, 
-}
-```
+Citation withheld for double-blind review.
 
 ## References
 
