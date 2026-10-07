@@ -94,6 +94,10 @@ packages, which may not reproduce the results here. Install an `arm64` conda,
 or create the environment with
 `CONDA_SUBDIR=osx-arm64 conda env create -f environment.yml`.
 
+Tested with: Python 3.11.15, PyTorch 2.5.1, PySR 1.5.10,
+SymbolicRegression.jl 1.11.3, Julia 1.12.6, NumPy 2.4.3, SymPy 1.14.0,
+on macOS 26.2 (`arm64`).
+
 ## Documentation guide
 
 Use the README files below for focused guidance on each stage of the pipeline:
