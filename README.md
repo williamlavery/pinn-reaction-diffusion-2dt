@@ -79,6 +79,21 @@ conda activate pinn-rd-2dt
 
 Then open the notebook and select this same environment as kernel.
 
+### Platform
+
+Tested on macOS with Apple Silicon (`arm64`). Check the architecture conda will
+resolve for:
+
+```bash
+python -c "import platform; print(platform.machine())"
+```
+
+On an Apple Silicon Mac this should report `arm64`. If it reports `x86_64`,
+conda is an Intel build running under Rosetta and will install `osx-64`
+packages, which may not reproduce the results here. Install an `arm64` conda,
+or create the environment with
+`CONDA_SUBDIR=osx-arm64 conda env create -f environment.yml`.
+
 ## Documentation guide
 
 Use the README files below for focused guidance on each stage of the pipeline:
