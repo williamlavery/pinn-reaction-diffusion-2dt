@@ -46,3 +46,4 @@ data/python_v2/runs/
 JN/outputs/*
 # ...except the cached SR fits, which ship so the notebook does not refit:
 !JN/outputs/sr_updated/
+!JN/outputs/forward/
