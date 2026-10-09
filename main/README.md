@@ -13,15 +13,16 @@ It is organized as a pipeline, where each stage has its own README and command-l
 - `data/python_v2/`: data-processing pipeline (creates `dataObj` objects).
 - `dataObj_v2/`: binned data objects used for model training (tracked).
 - `binn_v2/`: BINN training pipeline and model code.
-- `binn_v2_models_updated/`: trained models, re-trained under `environment.yml` (tracked).
+- `binn_v2_models/`: trained models used in the paper (tracked).
 - `JN/`: analysis notebook and helper modules.
 
-`dataObj_v2/` and `binn_v2_models_updated/` ship with the repository, so
+`dataObj_v2/` and `binn_v2_models/` ship with the repository, so
 `JN/paper_notebook.ipynb` runs without retraining. The commands below regenerate
-them from scratch; a fresh training run writes to `binn_v2_models/`, which is not
-tracked. `binn_v2/runs/` and `data/python_v2/runs/` are created by those
-runs and are not tracked. Under `JN/outputs/`, the cached SR fits
-(`sr_updated/`) are tracked; figures and tables are generated.
+them from scratch -- note that a fresh training run writes into
+`binn_v2_models/`, overwriting the models provided. `binn_v2/runs/` and
+`data/python_v2/runs/` are created by those runs and are not tracked. Under
+`JN/outputs/`, the cached SR fits (`sr/`) and forward solves (`forward/`) are
+tracked; figures and tables are generated.
 
 <!--
 ## Quick start

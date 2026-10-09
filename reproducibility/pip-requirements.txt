@@ -1,0 +1,9 @@
+click==8.3.2
+joblib==1.5.3
+juliacall==0.9.26
+juliapkg==0.1.23
+pysr==1.5.10
+scikit-learn==1.8.0
+semver==3.0.4
+threadpoolctl==3.6.0
+tomlkit==0.14.0
