@@ -52,6 +52,8 @@ In other words, the notebook starts with observational scatter/coordinate struct
 
 ## Statement on trained models and SR results
 
-Execution of `main/JN/paper_notebook.ipynb` loads the trained models and symbolic-regression (SR) results provided with the repository, in `main/binn_v2_models/` and `main/JN/outputs/sr/`. These were produced by re-training under the `main/environment.yml` configuration, so that the results can be reproduced in a current Python environment. The SR fits provided were produced on 23 April 2026.
-
-Validation losses agree with those reported in the paper to within the fourth significant figure, the small differences arising from torch and PySR version changes between the original and the re-trained run. Run times differ from those reported in the paper, because they are measured from the re-run and wall-clock timings depend on hardware and machine load. The list of candidate expressions across the ten SR repeats likewise differs slightly from the paper's, but the dominant expression form for each replicate is unchanged.
+Execution of `main/JN/paper_notebook.ipynb` loads the trained models and
+symbolic-regression (SR) results provided with the repository, in
+`main/binn_v2_models/` and `main/JN/outputs/sr/`. These are the models and SR
+fits reported in the paper, generated in the `pinn-rd-2dt` environment on
+9 October 2026.
