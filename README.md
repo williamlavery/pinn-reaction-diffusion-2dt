@@ -23,6 +23,7 @@ pinn-reaction-diffusion-2dt/
 ├── LICENSE
 ├── environment.yml
 ├── requirements.txt
+├── reproducibility/                 # exact environment lock
 ├── pipeline_schematic.png
 └── main/
 	├── README.md
@@ -54,13 +55,13 @@ pinn-reaction-diffusion-2dt/
 	│   │           ├── ModelWrapper.py
 	│   │           └── PDESolver_2D.py
 	│   └── runs/                    # generated
-	├── binn_v2_models_updated/      # trained models
+	├── binn_v2_models/              # trained models
 	└── JN/
 		├── README.md
 		├── paper_notebook.ipynb
 		├── paper_helpers/
 		└── outputs/
-		    ├── sr_updated/             # cached SR fits
+		    ├── sr/                     # cached SR fits
 		    └── figures/, tables/, ...  # generated
 ```
 
@@ -70,14 +71,35 @@ the pipeline or the notebook; everything else ships with the repository, so
 
 ## Environment setup
 
-Create the project environment first:
+Two environments are provided.
+
+**Standard** -- for running and building on the code:
 
 ```bash
 conda env create -f environment.yml
 conda activate pinn-rd-2dt
 ```
 
-Then open the notebook and select this same environment as kernel.
+Then open the notebook and select this environment as kernel. This pins the
+Python packages but not Julia: PySR installs its own Julia and resolves
+whichever version is current, so refitting the symbolic regression on the
+provided models can give slightly different candidate expressions across the
+ten SR runs (the dominant expression form for each replicate is unchanged).
+The SR results in `main/JN/outputs/sr/` ship with the repository and are
+loaded from cache, so the notebook reproduces the paper's expressions unless you
+deliberately refit.
+
+**Exact** -- for reproducing the results in the paper, including the symbolic
+regression. This pins the full Python *and* Julia stack, Julia 1.12.6 and
+SymbolicRegression.jl 1.11.3 included:
+
+```bash
+bash reproducibility/setup-macos-arm64.sh
+conda activate pinn-rd-2dt-repro
+```
+
+See [reproducibility/README.md](reproducibility/README.md). The lock is
+`osx-arm64` only.
 
 ### Platform
 
@@ -97,6 +119,9 @@ or create the environment with
 Tested with: Python 3.11.15, PyTorch 2.5.1, PySR 1.5.10,
 SymbolicRegression.jl 1.11.3, Julia 1.12.6, NumPy 2.4.3, SymPy 1.14.0,
 on macOS 26.2 (`arm64`).
+
+The trained models and SR fits provided were generated in the `pinn-rd-2dt`
+environment, which appears as `pinn-rd-2dt-2` in the run metadata.
 
 ## Documentation guide
 
