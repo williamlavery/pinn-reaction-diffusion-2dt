@@ -22,9 +22,13 @@ So no preparation is needed. To regenerate them from the CSV splits instead, run
 The symbolic-regression fits ship too, cached under `main/JN/outputs/sr/`. The
 SR sections load them instead of refitting, so you do not need to wait for PySR (or for
 it to build its Julia backend). Delete a cached `.pkl`, or pass `force_recompute`, to
-refit a case from scratch. Note that `environment.yml` does not pin Julia, so a
-refit may give slightly different candidate expressions; use the exact lock in
-`reproducibility/` to refit with the Julia stack the provided fits came from.
+refit a case from scratch.
+
+Which environment you refit in matters. The standard environment
+(`pinn-rd-2dt`, from `environment.yml`) does not pin Julia, so a refit there may
+give slightly different candidate expressions from the ones provided. Refitting
+in the exact environment (`pinn-rd-2dt-repro`, from `reproducibility/`) uses the
+same Julia stack the provided fits came from and reproduces them.
 
 ## Recommended usage
 

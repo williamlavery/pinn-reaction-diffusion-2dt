@@ -62,6 +62,7 @@ pinn-reaction-diffusion-2dt/
 		├── paper_helpers/
 		└── outputs/
 		    ├── sr/                     # cached SR fits
+		    ├── forward/                # cached forward solves
 		    └── figures/, tables/, ...  # generated
 ```
 
