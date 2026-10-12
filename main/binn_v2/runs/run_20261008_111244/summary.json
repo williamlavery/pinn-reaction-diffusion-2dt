@@ -1,0 +1,10 @@
+{
+  "candidate_combinations": 45,
+  "duration_sec": 17178.332,
+  "executed_combinations": 45,
+  "finished_at_utc": "2026-10-08T13:59:03.027219+00:00",
+  "records_file": "main/binn_v2/runs/run_20261008_111244/records.jsonl",
+  "retrained": 0,
+  "run_id": "20261008_111244",
+  "trained_new": 45
+}

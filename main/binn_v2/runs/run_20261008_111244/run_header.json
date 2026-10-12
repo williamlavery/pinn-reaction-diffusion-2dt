@@ -1,0 +1,13 @@
+{
+  "dataobj_root": "main/dataObj_v2",
+  "environment": {
+    "executable": "/opt/anaconda3/envs/pinn-rd-2dt-2/bin/python",
+    "platform": "macOS-26.2-arm64-arm-64bit",
+    "python_version": "3.11.15 | packaged by conda-forge | (main, Aug 11 2026, 10:24:21) [Clang 19.1.7 ]"
+  },
+  "git_commit": "unknown",
+  "main_root": "main",
+  "model_root": "main/binn_v2_models",
+  "run_id": "20261008_111244",
+  "started_at_utc": "2026-10-08T09:12:44.695680+00:00"
+}

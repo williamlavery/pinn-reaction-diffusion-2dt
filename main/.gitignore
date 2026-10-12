@@ -40,7 +40,6 @@ env/
 
 # Project-generated artifacts (rebuildable)
 binn_v2_models_old/
-binn_v2/runs/
 data/python_v2/runs/
 JN/outputs/*
 # ...except the cached SR fits, which ship so the notebook does not refit:
